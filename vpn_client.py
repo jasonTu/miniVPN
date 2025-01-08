@@ -72,13 +72,7 @@ class SecureTunnelClient:
         client_hello['shared_key_generation']['public_key'] = pem_public_key.decode()
         self.sock.sendto(json.dumps(client_hello).encode(), (self.server_ip, self.server_port))
 
-    def receive_server_hello(self):
-        server_hello, server = self.sock.recvfrom(2048)
-        server_hello = json.loads(server_hello.decode())
-        peer_pub_key = serialization.load_pem_public_key(
-            server_hello['shared_key_generation']['public_key'].encode())
-        self.shared_key = self.private_key.exchange(peer_pub_key)
-        # Perform key derivation.
+    def derive_keys(self):
         self.c2s_enc_key = HKDF(
             algorithm=hashes.SHA256(),
             length=32,
@@ -103,6 +97,16 @@ class SecureTunnelClient:
             salt=None,
             info=b'stoc iv',
         ).derive(self.shared_key)[:16]
+        pass
+
+    def receive_server_hello(self):
+        server_hello, server = self.sock.recvfrom(2048)
+        server_hello = json.loads(server_hello.decode())
+        peer_pub_key = serialization.load_pem_public_key(
+            server_hello['shared_key_generation']['public_key'].encode())
+        self.shared_key = self.private_key.exchange(peer_pub_key)
+        # Perform key derivation
+        self.derive_keys()
         cipher = Cipher(
             algorithms.AES(self.c2s_enc_key), modes.CTR(self.c2s_iv),
             backend=default_backend()
