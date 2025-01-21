@@ -12,3 +12,4 @@ python vpn_client.py
 # In the VPN client machine, add the following route rule if not exist
 10.245.249.0    10.64.0.100     255.255.255.0   UG    0      0        0 tun0
 10.64.0.0       0.0.0.0         255.255.255.0   U     0      0        0 tun0
+```
